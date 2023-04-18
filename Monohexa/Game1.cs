@@ -4,48 +4,51 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Monohexa;
 
-public class Game1 : Game
-{
-    private GraphicsDeviceManager _graphics;
-    private SpriteBatch _spriteBatch;
+public class Game1 : Game {
+  private GraphicsDeviceManager _graphics;
+  private SpriteBatch _spriteBatch;
 
-    public Game1()
+  Texture2D testHexTexture;
+
+  public Game1() {
+    _graphics = new GraphicsDeviceManager(this)
     {
-        _graphics = new GraphicsDeviceManager(this);
-        Content.RootDirectory = "Content";
-        IsMouseVisible = true;
-    }
+      PreferredBackBufferWidth = 1280,
+      PreferredBackBufferHeight = 720
+    };
 
-    protected override void Initialize()
-    {
-        // TODO: Add your initialization logic here
+    Content.RootDirectory = "Content";
+    IsMouseVisible = true;
+  }
 
-        base.Initialize();
-    }
+  protected override void Initialize() {
+    // TODO: Add your initialization logic here
 
-    protected override void LoadContent()
-    {
-        _spriteBatch = new SpriteBatch(GraphicsDevice);
+    base.Initialize();
+  }
 
-        // TODO: use this.Content to load your game content here
-    }
+  protected override void LoadContent() {
+    _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-    protected override void Update(GameTime gameTime)
-    {
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-            Exit();
+    testHexTexture = Content.Load<Texture2D>("Tiles/Terrain/dirt_01");
+  }
 
-        // TODO: Add your update logic here
+  protected override void Update(GameTime gameTime) {
+    if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+      Exit();
 
-        base.Update(gameTime);
-    }
+    // TODO: Add your update logic here
 
-    protected override void Draw(GameTime gameTime)
-    {
-        GraphicsDevice.Clear(Color.CornflowerBlue);
+    base.Update(gameTime);
+  }
 
-        // TODO: Add your drawing code here
+  protected override void Draw(GameTime gameTime) {
+    GraphicsDevice.Clear(Color.CornflowerBlue);
 
-        base.Draw(gameTime);
-    }
+    _spriteBatch.Begin();
+    _spriteBatch.Draw(testHexTexture, new Vector2(0, 0), Color.White);
+    _spriteBatch.End();
+
+    base.Draw(gameTime);
+  }
 }
