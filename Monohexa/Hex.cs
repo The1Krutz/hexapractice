@@ -1,298 +1,408 @@
 // SPDX-FileCopyrightText: 2023 The1Krutz <the1krutz@gmail.com>
 // SPDX-License-Identifier: MIT
 
+// I've modified this from the original, but credit where it's due:
+// Generated code -- CC0 -- No Rights Reserved -- http://www.redblobgames.com/grids/hexagons/
+
 namespace Monohexa;
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 
-public struct Point {
-  public Point(double x, double y) {
-    this.x = x;
-    this.y = y;
-  }
-  public readonly double x;
-  public readonly double y;
-}
+public readonly struct Hex {
+  public readonly int Q;
+  public readonly int R;
+  public readonly int S;
 
-public struct Hex {
+  public Hex() : this(0, 0, 0) { }
+
+  public Hex(int q, int r) : this(q, r, -q - r) { }
+
   public Hex(int q, int r, int s) {
-    this.q = q;
-    this.r = r;
-    this.s = s;
-    if (q + r + s != 0)
+    if (q + r + s != 0) {
       throw new ArgumentException("q + r + s must be 0");
-  }
-  public readonly int q;
-  public readonly int r;
-  public readonly int s;
+    }
 
-  public Hex Add(Hex b) {
-    return new Hex(q + b.q, r + b.r, s + b.s);
+    Q = q;
+    R = r;
+    S = s;
   }
 
+  public Hex RotateLeft => new(-S, -Q, -R);
 
-  public Hex Subtract(Hex b) {
-    return new Hex(q - b.q, r - b.r, s - b.s);
+  public Hex RotateRight => new(-R, -S, -Q);
+
+  public static readonly List<Hex> Directions = new() {
+    new Hex(1, 0, -1),
+    new Hex(1, -1, 0),
+    new Hex(0, -1, 1),
+    new Hex(-1, 0, 1),
+    new Hex(-1, 1, 0),
+    new Hex(0, 1, -1)
+  };
+
+  public static Hex Direction(int direction) {
+    return Directions[direction];
   }
-
-
-  public Hex Scale(int k) {
-    return new Hex(q * k, r * k, s * k);
-  }
-
-
-  public Hex RotateLeft() {
-    return new Hex(-s, -q, -r);
-  }
-
-
-  public Hex RotateRight() {
-    return new Hex(-r, -s, -q);
-  }
-
-  static public List<Hex> directions = new List<Hex> { new Hex(1, 0, -1), new Hex(1, -1, 0), new Hex(0, -1, 1), new Hex(-1, 0, 1), new Hex(-1, 1, 0), new Hex(0, 1, -1) };
-
-  static public Hex Direction(int direction) {
-    return Hex.directions[direction];
-  }
-
 
   public Hex Neighbor(int direction) {
-    return Add(Hex.Direction(direction));
+    return this + Direction(direction);
   }
 
-  static public List<Hex> diagonals = new List<Hex> { new Hex(2, -1, -1), new Hex(1, -2, 1), new Hex(-1, -1, 2), new Hex(-2, 1, 1), new Hex(-1, 2, -1), new Hex(1, 1, -2) };
+  public static readonly List<Hex> Diagonals = new() {
+    new Hex(2, -1, -1),
+    new Hex(1, -2, 1),
+    new Hex(-1, -1, 2),
+    new Hex(-2, 1, 1),
+    new Hex(-1, 2, -1),
+    new Hex(1, 1, -2)
+  };
 
   public Hex DiagonalNeighbor(int direction) {
-    return Add(Hex.diagonals[direction]);
+    return this + Diagonals[direction];
   }
 
+  public int Length => (int)((MathF.Abs(Q) + MathF.Abs(R) + MathF.Abs(S)) / 2);
 
-  public int Length() {
-    return (int)((Math.Abs(q) + Math.Abs(r) + Math.Abs(s)) / 2);
+  public int Distance(Hex b) => (this - b).Length;
+
+  // operators
+
+  public static Hex operator +(Hex a, Hex b) => new(a.Q + b.Q, a.R + b.R, a.S + b.S);
+
+  public static Hex operator -(Hex a, Hex b) => new(a.Q - b.Q, a.R - b.R, a.S - b.S);
+
+  public static Hex operator *(Hex a, int k) => new(a.Q * k, a.R * k, a.S * k);
+
+  /// <summary>
+  /// Divides by k. Be careful, this is integer division. Rounding is likely
+  /// </summary>
+  public static Hex operator /(Hex a, int k) => new(a.Q / k, a.R / k, a.S / k);
+
+  public static bool operator ==(Hex a, Hex b) => a.Equals(b);
+
+  public static bool operator !=(Hex a, Hex b) => !(a == b);
+
+  public override bool Equals(object obj) {
+    if (obj == null || GetType() != obj.GetType()) {
+      return false;
+    }
+
+    Hex other = (Hex)obj;
+
+    return Q == other.Q && R == other.R && S == other.S;
   }
 
-
-  public int Distance(Hex b) {
-    return Subtract(b).Length();
-  }
-
-  public bool Equals(Hex other) {
-    return q == other.q && r == other.r && s == other.s;
-  }
-
+  public override int GetHashCode() => Q.GetHashCode() ^ R.GetHashCode() ^ S.GetHashCode();
 }
 
-public struct FractionalHex {
-  public FractionalHex(double q, double r, double s) {
-    this.q = q;
-    this.r = r;
-    this.s = s;
-    if (Math.Round(q + r + s) != 0)
+public readonly struct FractionalHex {
+  public readonly float Q;
+  public readonly float R;
+  public readonly float S;
+
+  public FractionalHex() : this(0, 0, 0) { }
+
+  public FractionalHex(float q, float r) : this(q, r, -q - r) { }
+
+  public FractionalHex(float q, float r, float s) {
+    if (MathF.Round(q + r + s) != 0) {
       throw new ArgumentException("q + r + s must be 0");
+    }
+
+    Q = q;
+    R = r;
+    S = s;
   }
-  public readonly double q;
-  public readonly double r;
-  public readonly double s;
 
   public Hex HexRound() {
-    int qi = (int)(Math.Round(q));
-    int ri = (int)(Math.Round(r));
-    int si = (int)(Math.Round(s));
-    double q_diff = Math.Abs(qi - q);
-    double r_diff = Math.Abs(ri - r);
-    double s_diff = Math.Abs(si - s);
-    if (q_diff > r_diff && q_diff > s_diff) {
+    int qi = (int)MathF.Round(Q);
+    int ri = (int)MathF.Round(R);
+    int si = (int)MathF.Round(S);
+
+    float dq = MathF.Abs(qi - Q);
+    float dr = MathF.Abs(ri - R);
+    float ds = MathF.Abs(si - S);
+
+    if (dq > dr && dq > ds) {
       qi = -ri - si;
-    } else
-        if (r_diff > s_diff) {
-      ri = -qi - si;
     } else {
-      si = -qi - ri;
+      if (dr > ds) {
+        ri = -qi - si;
+      } else {
+        si = -qi - ri;
+      }
     }
+
     return new Hex(qi, ri, si);
   }
 
-
-  public FractionalHex HexLerp(FractionalHex b, double t) {
-    return new FractionalHex(q * (1.0 - t) + b.q * t, r * (1.0 - t) + b.r * t, s * (1.0 - t) + b.s * t);
+  public FractionalHex HexLerp(FractionalHex b, float t) {
+    return new FractionalHex((Q * (1.0f - t)) + (b.Q * t), (R * (1.0f - t)) + (b.R * t), (S * (1.0f - t)) + (b.S * t));
   }
 
+  public static List<Hex> HexLinedraw(Hex a, Hex b) {
+    int n = a.Distance(b);
+    FractionalHex a_nudge = new(a.Q + 1e-06f, a.R + 1e-06f, a.S - 2e-06f);
+    FractionalHex b_nudge = new(b.Q + 1e-06f, b.R + 1e-06f, b.S - 2e-06f);
+    List<Hex> results = new();
+    float step = 1.0f / MathF.Max(n, 1);
 
-  static public List<Hex> HexLinedraw(Hex a, Hex b) {
-    int N = a.Distance(b);
-    FractionalHex a_nudge = new FractionalHex(a.q + 1e-06, a.r + 1e-06, a.s - 2e-06);
-    FractionalHex b_nudge = new FractionalHex(b.q + 1e-06, b.r + 1e-06, b.s - 2e-06);
-    List<Hex> results = new List<Hex> { };
-    double step = 1.0 / Math.Max(N, 1);
-    for (int i = 0; i <= N; i++) {
+    for (int i = 0; i <= n; i++) {
       results.Add(a_nudge.HexLerp(b_nudge, step * i).HexRound());
     }
+
     return results;
   }
 
+  public static bool operator ==(FractionalHex a, FractionalHex b) => a.Equals(b);
+
+  public static bool operator !=(FractionalHex a, FractionalHex b) => !(a == b);
+
+  public override bool Equals(object obj) {
+    if (obj == null || GetType() != obj.GetType()) {
+      return false;
+    }
+
+    FractionalHex other = (FractionalHex)obj;
+
+    return Q == other.Q && R == other.R && S == other.S;
+  }
+
+  public override int GetHashCode() => Q.GetHashCode() ^ R.GetHashCode() ^ S.GetHashCode();
 }
 
-public struct OffsetCoord {
+public readonly struct OffsetCoord {
+  public readonly int Col;
+  public readonly int Row;
+  public static readonly int EVEN = 1;
+  public static readonly int ODD = -1;
+
+  public OffsetCoord() : this(0, 0) { }
+
   public OffsetCoord(int col, int row) {
-    this.col = col;
-    this.row = row;
+    Col = col;
+    Row = row;
   }
-  public readonly int col;
-  public readonly int row;
-  static public int EVEN = 1;
-  static public int ODD = -1;
 
-  static public OffsetCoord QoffsetFromCube(int offset, Hex h) {
-    int col = h.q;
-    int row = h.r + (int)((h.q + offset * (h.q & 1)) / 2);
-    if (offset != OffsetCoord.EVEN && offset != OffsetCoord.ODD) {
+  public static OffsetCoord QoffsetFromCube(int offset, Hex h) {
+    int col = h.Q;
+    int row = h.R + ((h.Q + (offset * (h.Q & 1))) / 2);
+
+    if (offset != EVEN && offset != ODD) {
       throw new ArgumentException("offset must be EVEN (+1) or ODD (-1)");
     }
+
     return new OffsetCoord(col, row);
   }
 
-
-  static public Hex QoffsetToCube(int offset, OffsetCoord h) {
-    int q = h.col;
-    int r = h.row - (int)((h.col + offset * (h.col & 1)) / 2);
+  public static Hex QoffsetToCube(int offset, OffsetCoord h) {
+    int q = h.Col;
+    int r = h.Row - ((h.Col + (offset * (h.Col & 1))) / 2);
     int s = -q - r;
-    if (offset != OffsetCoord.EVEN && offset != OffsetCoord.ODD) {
+
+    if (offset != EVEN && offset != ODD) {
       throw new ArgumentException("offset must be EVEN (+1) or ODD (-1)");
     }
+
     return new Hex(q, r, s);
   }
 
+  public static OffsetCoord RoffsetFromCube(int offset, Hex h) {
+    int col = h.Q + ((h.R + (offset * (h.R & 1))) / 2);
+    int row = h.R;
 
-  static public OffsetCoord RoffsetFromCube(int offset, Hex h) {
-    int col = h.q + (int)((h.r + offset * (h.r & 1)) / 2);
-    int row = h.r;
-    if (offset != OffsetCoord.EVEN && offset != OffsetCoord.ODD) {
+    if (offset != EVEN && offset != ODD) {
       throw new ArgumentException("offset must be EVEN (+1) or ODD (-1)");
     }
+
     return new OffsetCoord(col, row);
   }
 
-
-  static public Hex RoffsetToCube(int offset, OffsetCoord h) {
-    int q = h.col - (int)((h.row + offset * (h.row & 1)) / 2);
-    int r = h.row;
+  public static Hex RoffsetToCube(int offset, OffsetCoord h) {
+    int q = h.Col - ((h.Row + (offset * (h.Row & 1))) / 2);
+    int r = h.Row;
     int s = -q - r;
-    if (offset != OffsetCoord.EVEN && offset != OffsetCoord.ODD) {
+
+    if (offset != EVEN && offset != ODD) {
       throw new ArgumentException("offset must be EVEN (+1) or ODD (-1)");
     }
+
     return new Hex(q, r, s);
   }
 
+  public static bool operator ==(OffsetCoord a, OffsetCoord b) => a.Equals(b);
+
+  public static bool operator !=(OffsetCoord a, OffsetCoord b) => !(a == b);
+
+  public override bool Equals(object obj) {
+    if (obj == null || GetType() != obj.GetType()) {
+      return false;
+    }
+
+    OffsetCoord other = (OffsetCoord)obj;
+
+    return Col == other.Col && Row == other.Row;
+  }
+
+  public override int GetHashCode() => Col.GetHashCode() ^ Row.GetHashCode();
 }
 
-public struct DoubledCoord {
-  public DoubledCoord(int col, int row) {
-    this.col = col;
-    this.row = row;
-  }
-  public readonly int col;
-  public readonly int row;
+public readonly struct DoubledCoord {
+  public readonly int Col;
+  public readonly int Row;
 
-  static public DoubledCoord QdoubledFromCube(Hex h) {
-    int col = h.q;
-    int row = 2 * h.r + h.q;
+  public DoubledCoord() : this(0, 0) { }
+
+  public DoubledCoord(int col, int row) {
+    Col = col;
+    Row = row;
+  }
+
+  public static DoubledCoord QdoubledFromCube(Hex h) {
+    int col = h.Q;
+    int row = (2 * h.R) + h.Q;
+
     return new DoubledCoord(col, row);
   }
-
 
   public Hex QdoubledToCube() {
-    int q = col;
-    int r = (int)((row - col) / 2);
+    int q = Col;
+    int r = (Row - Col) / 2;
     int s = -q - r;
+
     return new Hex(q, r, s);
   }
 
+  public static DoubledCoord RdoubledFromCube(Hex h) {
+    int col = (2 * h.Q) + h.R;
+    int row = h.R;
 
-  static public DoubledCoord RdoubledFromCube(Hex h) {
-    int col = 2 * h.q + h.r;
-    int row = h.r;
     return new DoubledCoord(col, row);
   }
 
-
   public Hex RdoubledToCube() {
-    int q = (int)((col - row) / 2);
-    int r = row;
+    int q = (Col - Row) / 2;
+    int r = Row;
     int s = -q - r;
+
     return new Hex(q, r, s);
   }
 
+  public static bool operator ==(DoubledCoord a, DoubledCoord b) => a.Equals(b);
+
+  public static bool operator !=(DoubledCoord a, DoubledCoord b) => !(a == b);
+
+  public override bool Equals(object obj) {
+    if (obj == null || GetType() != obj.GetType()) {
+      return false;
+    }
+
+    DoubledCoord other = (DoubledCoord)obj;
+
+    return Col == other.Col && Row == other.Row;
+  }
+
+  public override int GetHashCode() => Col.GetHashCode() ^ Row.GetHashCode();
 }
 
-public struct Orientation {
-  public Orientation(double f0, double f1, double f2, double f3, double b0, double b1, double b2, double b3, double start_angle) {
-    this.f0 = f0;
-    this.f1 = f1;
-    this.f2 = f2;
-    this.f3 = f3;
-    this.b0 = b0;
-    this.b1 = b1;
-    this.b2 = b2;
-    this.b3 = b3;
-    this.start_angle = start_angle;
+public readonly struct Orientation {
+  public readonly float F0;
+  public readonly float F1;
+  public readonly float F2;
+  public readonly float F3;
+  public readonly float B0;
+  public readonly float B1;
+  public readonly float B2;
+  public readonly float B3;
+  public readonly float StartAngle;
+
+  public Orientation(float f0,
+                     float f1,
+                     float f2,
+                     float f3,
+                     float b0,
+                     float b1,
+                     float b2,
+                     float b3,
+                     float startAngle) {
+    F0 = f0;
+    F1 = f1;
+    F2 = f2;
+    F3 = f3;
+    B0 = b0;
+    B1 = b1;
+    B2 = b2;
+    B3 = b3;
+    StartAngle = startAngle;
   }
-  public readonly double f0;
-  public readonly double f1;
-  public readonly double f2;
-  public readonly double f3;
-  public readonly double b0;
-  public readonly double b1;
-  public readonly double b2;
-  public readonly double b3;
-  public readonly double start_angle;
 }
 
-public struct Layout {
-  public Layout(Orientation orientation, Point size, Point origin) {
-    this.orientation = orientation;
-    this.size = size;
-    this.origin = origin;
+public readonly struct Layout {
+  public readonly Orientation Orientation;
+  public readonly Vector2 Size;
+  public readonly Vector2 Origin;
+
+  public static readonly Orientation Pointy = new(
+    MathF.Sqrt(3.0f),
+    MathF.Sqrt(3.0f) / 2.0f,
+    0.0f,
+    3.0f / 2.0f,
+    MathF.Sqrt(3.0f) / 3.0f,
+    -1.0f / 3.0f,
+    0.0f,
+    2.0f / 3.0f,
+    0.5f);
+  public static readonly Orientation Flat = new(
+    3.0f / 2.0f,
+    0.0f,
+    MathF.Sqrt(3.0f) / 2.0f,
+    MathF.Sqrt(3.0f),
+    2.0f / 3.0f,
+    0.0f,
+    -1.0f / 3.0f,
+    MathF.Sqrt(3.0f) / 3.0f,
+    0.0f);
+
+  public Layout(Orientation orientation, Vector2 size, Vector2 origin) {
+    Orientation = orientation;
+    Size = size;
+    Origin = origin;
   }
-  public readonly Orientation orientation;
-  public readonly Point size;
-  public readonly Point origin;
-  static public Orientation pointy = new Orientation(Math.Sqrt(3.0), Math.Sqrt(3.0) / 2.0, 0.0, 3.0 / 2.0, Math.Sqrt(3.0) / 3.0, -1.0 / 3.0, 0.0, 2.0 / 3.0, 0.5);
-  static public Orientation flat = new Orientation(3.0 / 2.0, 0.0, Math.Sqrt(3.0) / 2.0, Math.Sqrt(3.0), 2.0 / 3.0, 0.0, -1.0 / 3.0, Math.Sqrt(3.0) / 3.0, 0.0);
 
-  public Point HexToPixel(Hex h) {
-    Orientation M = orientation;
-    double x = (M.f0 * h.q + M.f1 * h.r) * size.x;
-    double y = (M.f2 * h.q + M.f3 * h.r) * size.y;
-    return new Point(x + origin.x, y + origin.y);
+  public Vector2 HexToPixel(Hex h) {
+    Orientation m = Orientation;
+    float x = ((m.F0 * h.Q) + (m.F1 * h.R)) * Size.X;
+    float y = ((m.F2 * h.Q) + (m.F3 * h.R)) * Size.Y;
+
+    return new Vector2(x + Origin.X, y + Origin.Y);
   }
 
+  public FractionalHex PixelToHex(Vector2 p) {
+    Orientation m = Orientation;
+    Vector2 pt = new((p.X - Origin.X) / Size.X, (p.Y - Origin.Y) / Size.Y);
+    float q = (m.B0 * pt.X) + (m.B1 * pt.Y);
+    float r = (m.B2 * pt.X) + (m.B3 * pt.Y);
 
-  public FractionalHex PixelToHex(Point p) {
-    Orientation M = orientation;
-    Point pt = new Point((p.x - origin.x) / size.x, (p.y - origin.y) / size.y);
-    double q = M.b0 * pt.x + M.b1 * pt.y;
-    double r = M.b2 * pt.x + M.b3 * pt.y;
     return new FractionalHex(q, r, -q - r);
   }
 
+  public Vector2 HexCornerOffset(int corner) {
+    Orientation m = Orientation;
+    float angle = 2.0f * MathF.PI * (m.StartAngle - corner) / 6.0f;
 
-  public Point HexCornerOffset(int corner) {
-    Orientation M = orientation;
-    double angle = 2.0 * Math.PI * (M.start_angle - corner) / 6.0;
-    return new Point(size.x * Math.Cos(angle), size.y * Math.Sin(angle));
+    return new Vector2(Size.X * MathF.Cos(angle), Size.Y * MathF.Sin(angle));
   }
 
-
-  public List<Point> PolygonCorners(Hex h) {
-    List<Point> corners = new List<Point> { };
-    Point center = HexToPixel(h);
+  public List<Vector2> PolygonCorners(Hex h) {
+    List<Vector2> corners = new();
+    Vector2 center = HexToPixel(h);
     for (int i = 0; i < 6; i++) {
-      Point offset = HexCornerOffset(i);
-      corners.Add(new Point(center.x + offset.x, center.y + offset.y));
+      Vector2 offset = HexCornerOffset(i);
+      corners.Add(new Vector2(center.X + offset.X, center.Y + offset.Y));
     }
+
     return corners;
   }
-
 }
