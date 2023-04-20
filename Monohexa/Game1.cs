@@ -1,4 +1,7 @@
-﻿using Microsoft.Xna.Framework;
+﻿// SPDX-FileCopyrightText: 2023 The1Krutz <the1krutz@gmail.com>
+// SPDX-License-Identifier: MIT
+
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
@@ -8,11 +11,10 @@ public class Game1 : Game {
   private GraphicsDeviceManager _graphics;
   private SpriteBatch _spriteBatch;
 
-  Texture2D testHexTexture;
+  Texture2D _testHexTexture;
 
   public Game1() {
-    _graphics = new GraphicsDeviceManager(this)
-    {
+    _graphics = new GraphicsDeviceManager(this) {
       PreferredBackBufferWidth = 1280,
       PreferredBackBufferHeight = 720
     };
@@ -30,12 +32,13 @@ public class Game1 : Game {
   protected override void LoadContent() {
     _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-    testHexTexture = Content.Load<Texture2D>("Tiles/Terrain/dirt_01");
+    _testHexTexture = Content.Load<Texture2D>("Tiles/Terrain/dirt_01");
   }
 
   protected override void Update(GameTime gameTime) {
-    if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+    if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape)) {
       Exit();
+    }
 
     // TODO: Add your update logic here
 
@@ -46,7 +49,7 @@ public class Game1 : Game {
     GraphicsDevice.Clear(Color.CornflowerBlue);
 
     _spriteBatch.Begin();
-    _spriteBatch.Draw(testHexTexture, new Vector2(0, 0), Color.White);
+    _spriteBatch.Draw(_testHexTexture, new Vector2(0, 0), Color.White);
     _spriteBatch.End();
 
     base.Draw(gameTime);

@@ -1,3 +1,7 @@
-# monogame / C# stuff
+###############
+# Directories #
+###############
 bin/
 obj/
+TestResults/
+

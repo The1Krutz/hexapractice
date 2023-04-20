@@ -1,0 +1,9 @@
+# config file for report generator
+
+[ReportGenerator]
+	reports = TestResults/*/coverage.cobertura.xml
+	targetdir = "TestResults/coverage"
+  reporttype = HtmlInline
+  reporttype = MarkdownSummary
+  # reporttype = Badges
+  historydir = TestResults/coverage
